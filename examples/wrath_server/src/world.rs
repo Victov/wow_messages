@@ -231,6 +231,7 @@ async fn handle(mut stream: TcpStream, users: Arc<Mutex<HashMap<String, SrpServe
         tokio::time::sleep(Duration::from_secs(2)).await;
 
         let mut upd = update_mask.clone();
+        upd.dirty_reset();
         upd.set_unit_DISPLAYID(display_id);
         SMSG_UPDATE_OBJECT {
             objects: vec![Object {
