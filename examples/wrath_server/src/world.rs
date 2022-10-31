@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
 use wow_srp::normalized_string::NormalizedString;
 use wow_srp::server::SrpServer;
@@ -203,7 +204,7 @@ async fn handle(mut stream: TcpStream, users: Arc<Mutex<HashMap<String, SrpServe
         objects: vec![Object {
             update_type: Object_UpdateType::CreateObject2 {
                 guid3: Guid::new(4),
-                mask2: UpdateMask::Player(update_mask),
+                mask2: UpdateMask::Player(update_mask.clone()),
                 movement2: MovementBlock { update_flag },
                 object_type: ObjectType::Player,
             },
@@ -218,6 +219,34 @@ async fn handle(mut stream: TcpStream, users: Arc<Mutex<HashMap<String, SrpServe
         .await
         .unwrap();
 
+    //GOAT LOOP START
+    let mut display_id = 0;
+    loop {
+        display_id = match display_id {
+            10000 => 50,
+            50 => 10000,
+            _ => 50,
+        };
+        println!("new display id = {}", display_id);
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        let mut upd = update_mask.clone();
+        upd.set_unit_DISPLAYID(display_id);
+        SMSG_UPDATE_OBJECT {
+            objects: vec![Object {
+                update_type: Object_UpdateType::Values {
+                    guid1: Guid::new(4),
+                    mask1: UpdateMask::Player(upd),
+                },
+            }],
+        }
+        .tokio_write_encrypted_server(&mut stream, encryption.encrypter())
+        .await
+        .unwrap();
+    }
+    //GOAT LOOP END
+
+    /*
     loop {
         match ClientOpcodeMessage::tokio_read_encrypted(&mut stream, encryption.decrypter()).await {
             Ok(e) => {
@@ -227,5 +256,5 @@ async fn handle(mut stream: TcpStream, users: Arc<Mutex<HashMap<String, SrpServe
                 dbg!(e);
             }
         }
-    }
+    }*/
 }
